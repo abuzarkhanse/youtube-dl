@@ -1,0 +1,46 @@
+name: Auto-patch CVEs (Python minimal)
+
+on:
+  workflow_dispatch: # allow manual trigger
+  schedule:
+    - cron: "0 8 * * 1" # every Monday 08:00 UTC
+
+jobs:
+  autopatch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install base dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests packaging tabulate pytest
+
+      - name: Run OSV plan
+        run: python -m autopatch.cli plan --policy patch,minor
+
+      - name: Apply and test
+        run: python -m autopatch.run
+
+      - name: Create PR if changes
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: "chore(security): OSV-based upgrades"
+          title: "chore(security): OSV-based upgrades"
+          body: |
+            Automated minimal upgrades based on OSV plan.
+            Generated weekly by the autopatch workflow.
+          branch: security/autopatch-osv
+          add-paths: |
+            requirements.txt
+            plan.csv
