@@ -26,6 +26,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests packaging tabulate pytest
 
+      - name: Install autopatch
+        run: |
+          pip install -e .
+
       - name: Run OSV plan
         run: python -m autopatch.cli plan --policy patch,minor
 
